@@ -50,7 +50,7 @@ const NAV_ITEMS = [
   },
   {
     id: "sources",
-    label: "Sources",
+    label: "Integrations",
     icon: (
       <svg
         className="w-[18px] h-[18px]"
@@ -62,7 +62,7 @@ const NAV_ITEMS = [
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+          d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.54a4.5 4.5 0 00-6.364-6.364L4.5 8.25a4.5 4.5 0 006.364 6.364l4.5-4.5z"
         />
       </svg>
     ),
@@ -181,8 +181,56 @@ export default function Sidebar() {
         })}
       </nav>
 
+      {/* Collaborators */}
+      <div className="px-4 py-4 border-t border-gray-100">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">
+          Team
+        </p>
+        <div className="space-y-1">
+          {[
+            { name: "Aaditya S.", role: "Admin", color: "bg-brand-600", initials: "AS", online: true },
+            { name: "Priya M.", role: "PM", color: "bg-violet-500", initials: "PM", online: true },
+            { name: "Jake T.", role: "Eng Lead", color: "bg-blue-500", initials: "JT", online: true },
+            { name: "Mia L.", role: "Designer", color: "bg-pink-500", initials: "ML", online: false },
+            { name: "Noah K.", role: "Data", color: "bg-amber-500", initials: "NK", online: false },
+          ].map((person) => (
+            <div
+              key={person.name}
+              className="flex items-center gap-2.5 px-1 py-1.5 rounded-lg hover:bg-gray-50 transition-colors cursor-default"
+            >
+              <div className="relative shrink-0">
+                <div
+                  className={`w-7 h-7 rounded-full ${person.color} flex items-center justify-center text-[10px] font-bold text-white`}
+                >
+                  {person.initials}
+                </div>
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                    person.online ? "bg-brand-500" : "bg-gray-300"
+                  }`}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-medium text-gray-700 leading-tight truncate">
+                  {person.name}
+                </p>
+                <p className="text-[10px] text-gray-400 leading-tight">
+                  {person.role}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button className="mt-2 w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Invite
+        </button>
+      </div>
+
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-gray-100">
+      <div className="px-5 py-3 border-t border-gray-100">
         <p className="text-[11px] text-gray-300">
           Daisy &middot; TreeHacks 2025
         </p>

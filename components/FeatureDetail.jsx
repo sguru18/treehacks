@@ -30,6 +30,18 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
 };
 
+/* ---------- AI badge ---------- */
+function AiBadge({ className = '' }) {
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] text-gray-400 ${className}`}>
+      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+      </svg>
+      Daisy AI
+    </span>
+  );
+}
+
 /* ---------- Tiny copy button ---------- */
 function CopyBtn({ text, label = 'Copy' }) {
   const [copied, setCopied] = useState(false);
@@ -207,8 +219,14 @@ export default function FeatureDetail() {
                 >
                   {generatingSpec ? (
                     <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Generating...</>
-                  ) : 'Generate Specification'}
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+                      Generate Spec
+                    </>
+                  )}
                 </button>
+                <AiBadge className="mt-2 justify-center" />
               </div>
             )}
           </motion.div>
@@ -219,9 +237,12 @@ export default function FeatureDetail() {
           <motion.div key="sp" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="space-y-3">
             {generatingSpec && (
               <div className="card rounded-xl p-12 text-center">
-                <div className="w-6 h-6 border-2 border-brand-200 border-t-brand-600 rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-sm text-gray-500">Generating specification...</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">This may take 15–30 seconds</p>
+                <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center mx-auto mb-3">
+                  <div className="w-5 h-5 border-2 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
+                </div>
+                <p className="text-sm font-medium text-gray-700">Daisy is writing the spec...</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Analyzing feature requirements — 15–30 seconds</p>
+                <AiBadge className="mt-3 justify-center" />
               </div>
             )}
 
@@ -291,10 +312,11 @@ export default function FeatureDetail() {
                       ) : (
                         <>
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" /></svg>
-                          Break Down into Dev Tasks
+                          Generate Dev Tasks
                         </>
                       )}
                     </button>
+                    <AiBadge className="mt-2 justify-center" />
                   </div>
                 )}
               </>
@@ -316,9 +338,12 @@ export default function FeatureDetail() {
           <motion.div key="tk" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="space-y-2">
             {generatingTasks && (
               <div className="card rounded-xl p-12 text-center">
-                <div className="w-6 h-6 border-2 border-brand-200 border-t-brand-600 rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-sm text-gray-500">Breaking down into dev tasks...</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">Creating agent-ready prompts</p>
+                <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center mx-auto mb-3">
+                  <div className="w-5 h-5 border-2 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
+                </div>
+                <p className="text-sm font-medium text-gray-700">Daisy is breaking down tasks...</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Generating agent-ready prompts with story points</p>
+                <AiBadge className="mt-3 justify-center" />
               </div>
             )}
 
