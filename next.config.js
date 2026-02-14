@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
   experimental: {
-    serverActions: true,
+    serverComponentsExternalPackages: ['@browserbasehq/stagehand'],
   },
 }
 

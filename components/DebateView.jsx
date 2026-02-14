@@ -1,182 +1,122 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { motion } from 'framer-motion';
+import useDebateStore from '@/store/useDebateStore';
 import { DebateTree } from './debate-tree';
-import VerdictReport from './VerdictReport';
+import StreamPanel from './StreamPanel';
 import ForkRewindPanel from './ForkRewindPanel';
+import VerdictReport from './VerdictReport';
 
-/**
- * @typedef {import('@/lib/types.js').DebateTree} DebateTree
- */
-
-export default function DebateView({ debateId, onBack }) {
-  const [debate, setDebate] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [streaming, setStreaming] = useState(false);
-  const [currentContent, setCurrentContent] = useState('');
+export default function DebateView() {
+  const {
+    currentDebate,
+    currentDebateId,
+    streaming,
+    startRound,
+    fetchDebate,
+    clearCurrent,
+    fork,
+  } = useDebateStore();
 
   useEffect(() => {
-    loadDebate();
-  }, [debateId]);
-
-  const loadDebate = async () => {
-    try {
-      const response = await fetch(`/api/debate/${debateId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDebate(data);
-      }
-    } catch (error) {
-      console.error('Error loading debate:', error);
-    } finally {
-      setLoading(false);
+    if (currentDebateId) {
+      fetchDebate(currentDebateId);
     }
-  };
+  }, [currentDebateId, fetchDebate]);
 
-  const handleStartRound = async () => {
-    setStreaming(true);
-    setCurrentContent('');
-
-    try {
-      const response = await fetch(`/api/debate/${debateId}/stream`);
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              setStreaming(false);
-              await loadDebate();
-              return;
-            }
-
-            try {
-              const event = JSON.parse(data);
-              
-              if (event.type === 'advocate' || event.type === 'critic') {
-                setCurrentContent(event.fullContent || '');
-              } else if (event.type === 'node') {
-                await loadDebate();
-              } else if (event.type === 'verdict') {
-                await loadDebate();
-              }
-            } catch (e) {
-              // Ignore parse errors
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error streaming debate:', error);
-      setStreaming(false);
-    }
-  };
-
-  const handleFork = async (nodeId, label) => {
-    try {
-      const response = await fetch(`/api/debate/${debateId}/fork`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodeId, label }),
-      });
-
-      if (response.ok) {
-        await loadDebate();
-      }
-    } catch (error) {
-      console.error('Error forking debate:', error);
-    }
-  };
-
-  const handleRewind = async (nodeId) => {
-    try {
-      const response = await fetch(`/api/debate/${debateId}/rewind`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodeId }),
-      });
-
-      if (response.ok) {
-        await loadDebate();
-      }
-    } catch (error) {
-      console.error('Error rewinding debate:', error);
-    }
-  };
-
-  const handleSwitchBranch = async (branchId) => {
-    // Update debate's current branch (this would need an API endpoint or local state)
-    // For now, we'll reload and the backend should handle it
-    await loadDebate();
-  };
-
-  if (loading) {
+  if (!currentDebate) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading debate...</div>
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4" />
+          <div className="text-xl text-gray-400">Loading debate...</div>
+        </div>
       </div>
     );
   }
 
-  if (!debate) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Debate not found</div>
-      </div>
-    );
-  }
+  const handleFork = (nodeId) => {
+    const label = prompt('Enter a label for this fork (e.g., "What if we targeted enterprise?")');
+    if (label?.trim()) {
+      fork(nodeId, label.trim());
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <button
-              onClick={onBack}
-              className="text-blue-600 hover:text-blue-800 mb-2"
-            >
-              ← Back
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">{debate.idea}</h1>
-          </div>
-          <button
-            onClick={handleStartRound}
-            disabled={streaming}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative z-10 p-6 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
           >
-            {streaming ? 'Debating...' : 'Run Debate Round'}
-          </button>
-        </div>
+            <div>
+              <button
+                onClick={clearCurrent}
+                className="text-gray-400 hover:text-white mb-2 flex items-center gap-2 transition group text-sm"
+              >
+                <span className="group-hover:-translate-x-1 transition-transform">←</span>
+                <span>Back to Dashboard</span>
+              </button>
+              <h1 className="text-3xl md:text-4xl font-bold text-gradient mb-1">{currentDebate.idea}</h1>
+              <div className="flex items-center gap-3 text-sm text-gray-400">
+                <span>Round {currentDebate.round || 0}</span>
+                <span>·</span>
+                <span>{currentDebate.nodes?.length || 0} nodes</span>
+                <span>·</span>
+                <span className="capitalize">{currentDebate.status}</span>
+              </div>
+            </div>
+            <button
+              onClick={startRound}
+              disabled={streaming}
+              className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-semibold rounded-xl hover:from-cyan-400 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 shrink-0"
+            >
+              {streaming ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Debating...
+                </span>
+              ) : (
+                'Run Debate Round →'
+              )}
+            </button>
+          </motion.div>
 
-        {streaming && currentContent && (
-          <div className="mb-6 bg-white rounded-lg p-4 shadow">
-            <div className="text-sm text-gray-600 mb-2">Streaming...</div>
-            <div className="text-gray-800">{currentContent}</div>
+          {/* Main layout: two columns */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left: Stream + Tree (2 cols) */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Stream Panel */}
+              <StreamPanel />
+
+              {/* Debate Tree */}
+              <div className="glass-strong rounded-2xl p-6 border border-white/10">
+                <h3 className="text-lg font-bold mb-4 text-gradient-blue">Debate Tree</h3>
+                <DebateTree debate={currentDebate} onFork={handleFork} />
+              </div>
+
+              {/* Verdict */}
+              {currentDebate.finalVerdict && (
+                <VerdictReport verdict={currentDebate.finalVerdict} />
+              )}
+            </div>
+
+            {/* Right: Fork/Rewind Panel (1 col) */}
+            <div>
+              <ForkRewindPanel />
+            </div>
           </div>
-        )}
-
-        <ForkRewindPanel
-          debate={debate}
-          onFork={handleFork}
-          onRewind={handleRewind}
-          onSwitchBranch={handleSwitchBranch}
-        />
-
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <DebateTree debate={debate} onFork={(nodeId) => handleFork(nodeId, 'New Fork')} />
         </div>
-
-        {debate.finalVerdict && (
-          <VerdictReport verdict={debate.finalVerdict} />
-        )}
       </div>
     </div>
   );
