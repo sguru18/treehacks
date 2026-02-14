@@ -8,6 +8,7 @@ import SourcesView from "@/components/SourcesView";
 import InsightsView from "@/components/InsightsView";
 import FeaturesView from "@/components/FeaturesView";
 import FeatureDetail from "@/components/FeatureDetail";
+import RoadmapView from "@/components/RoadmapView";
 import { AnimatePresence, motion } from "framer-motion";
 
 const VIEWS = {
@@ -16,6 +17,7 @@ const VIEWS = {
   insights: InsightsView,
   features: FeaturesView,
   "feature-detail": FeatureDetail,
+  roadmap: RoadmapView,
 };
 
 export default function Home() {

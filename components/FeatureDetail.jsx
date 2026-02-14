@@ -101,6 +101,8 @@ export default function FeatureDetail() {
   const generateTasks = useProductStore((s) => s.generateTasks);
   const generatingSpec = useProductStore((s) => s.generatingSpec);
   const generatingTasks = useProductStore((s) => s.generatingTasks);
+  const addToRoadmap = useProductStore((s) => s.addToRoadmap);
+  const roadmapItems = useProductStore((s) => s.roadmapItems);
 
   const [tab, setTab] = useState('overview');
   const [expandedTaskId, setExpandedTaskId] = useState(null);
@@ -152,11 +154,29 @@ export default function FeatureDetail() {
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-gray-900 mb-1">{feature.title}</h1>
             <p className="text-[13px] text-gray-500 leading-relaxed mb-2">{feature.description}</p>
-            <div className="flex items-center gap-4 text-[11px]">
+            <div className="flex items-center gap-4 text-[11px] mb-3">
               <span className="text-gray-400">Impact <span className="font-semibold text-brand-700">{feature.impact}/10</span></span>
               <span className="text-gray-400">Effort <span className="font-semibold text-amber-600">{feature.effort}/10</span></span>
               <span className="text-gray-400">Confidence <span className="font-semibold text-blue-600">{feature.confidence}/10</span></span>
             </div>
+            {roadmapItems.some((r) => r.featureId === feature.id) ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-50 text-[12px] font-medium text-brand-700 border border-brand-100">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                On Roadmap
+              </span>
+            ) : (
+              <button
+                onClick={() => addToRoadmap(feature.id, 'backlog')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-brand-50 text-[12px] font-medium text-gray-600 hover:text-brand-700 border border-gray-200 hover:border-brand-200 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add to Roadmap
+              </button>
+            )}
           </div>
         </div>
       </motion.div>

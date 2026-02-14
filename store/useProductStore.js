@@ -1,6 +1,48 @@
 "use client";
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+/* ------------------------------------------------------------------ */
+/*  Team members (shared constant for assignment)                       */
+/* ------------------------------------------------------------------ */
+export const TEAM_MEMBERS = [
+  {
+    id: "as",
+    name: "Aaditya S.",
+    role: "Admin",
+    color: "bg-brand-600",
+    initials: "AS",
+  },
+  {
+    id: "pm",
+    name: "Priya M.",
+    role: "PM",
+    color: "bg-violet-500",
+    initials: "PM",
+  },
+  {
+    id: "jt",
+    name: "Jake T.",
+    role: "Eng Lead",
+    color: "bg-blue-500",
+    initials: "JT",
+  },
+  {
+    id: "ml",
+    name: "Mia L.",
+    role: "Designer",
+    color: "bg-pink-500",
+    initials: "ML",
+  },
+  {
+    id: "nk",
+    name: "Noah K.",
+    role: "Data",
+    color: "bg-amber-500",
+    initials: "NK",
+  },
+];
 
 /* ------------------------------------------------------------------ */
 /*  Sample data for demo                                               */
@@ -93,185 +135,276 @@ This would save me 2+ hours per week and prevent burnout from uneven task distri
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Store                                                              */
+/*  Store with persistence                                              */
 /* ------------------------------------------------------------------ */
 
-const useProductStore = create((set, get) => ({
-  /* ---- App state ---- */
-  showApp: false,
-  enterApp: () => set({ showApp: true, view: "dashboard" }),
+const useProductStore = create(
+  persist(
+    (set, get) => ({
+      /* ---- App state ---- */
+      showApp: false,
+      enterApp: () => set({ showApp: true, view: "dashboard" }),
 
-  /* ---- Navigation ---- */
-  view: "dashboard",
-  setView: (view) => set({ view, selectedFeatureId: null }),
-
-  /* ---- Sources ---- */
-  sources: [],
-  addSource: (source) =>
-    set((state) => ({
-      sources: [
-        ...state.sources,
-        {
-          ...source,
-          id: source.id || `src-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          uploadedAt: new Date().toISOString(),
-        },
-      ],
-    })),
-  removeSource: (id) =>
-    set((state) => ({
-      sources: state.sources.filter((s) => s.id !== id),
-    })),
-  loadSampleData: () =>
-    set({
-      sources: SAMPLE_SOURCES,
-      insights: [],
-      features: [],
-      selectedFeatureId: null,
-    }),
-
-  /* ---- Insights ---- */
-  insights: [],
-  analyzing: false,
-  analyzeError: null,
-
-  analyzeSources: async () => {
-    const { sources } = get();
-    if (sources.length === 0) return;
-
-    set({ analyzing: true, analyzeError: null });
-    try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sources }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Analysis failed");
-
-      set({
-        insights: data.insights,
-        analyzing: false,
-        view: "insights",
-      });
-    } catch (error) {
-      set({ analyzing: false, analyzeError: error.message });
-    }
-  },
-
-  /* ---- Features ---- */
-  features: [],
-  recommending: false,
-  recommendError: null,
-  selectedFeatureId: null,
-
-  recommendFeatures: async () => {
-    const { insights, sources } = get();
-    if (insights.length === 0) return;
-
-    set({ recommending: true, recommendError: null });
-    try {
-      const productContext = sources.map((s) => s.name).join(", ");
-      const res = await fetch("/api/recommend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ insights, productContext }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Recommendation failed");
-
-      set({
-        features: data.features,
-        recommending: false,
-        view: "features",
-      });
-    } catch (error) {
-      set({ recommending: false, recommendError: error.message });
-    }
-  },
-
-  selectFeature: (id) => set({ selectedFeatureId: id, view: "feature-detail" }),
-
-  /* ---- Spec generation ---- */
-  generatingSpec: false,
-  specError: null,
-
-  generateSpec: async (featureId) => {
-    const { features, insights } = get();
-    const feature = features.find((f) => f.id === featureId);
-    if (!feature) return;
-
-    set({ generatingSpec: true, specError: null });
-    try {
-      const relatedInsights = insights.filter((i) =>
-        feature.insightIds?.includes(i.id),
-      );
-      const res = await fetch("/api/spec", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ feature, insights: relatedInsights }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Spec generation failed");
-
-      set((state) => ({
-        features: state.features.map((f) =>
-          f.id === featureId ? { ...f, spec: data.spec } : f,
-        ),
-        generatingSpec: false,
-      }));
-    } catch (error) {
-      set({ generatingSpec: false, specError: error.message });
-    }
-  },
-
-  /* ---- Task generation ---- */
-  generatingTasks: false,
-  tasksError: null,
-
-  generateTasks: async (featureId) => {
-    const { features } = get();
-    const feature = features.find((f) => f.id === featureId);
-    if (!feature || !feature.spec) return;
-
-    set({ generatingTasks: true, tasksError: null });
-    try {
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ feature, spec: feature.spec }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Task generation failed");
-
-      set((state) => ({
-        features: state.features.map((f) =>
-          f.id === featureId ? { ...f, tasks: data.tasks } : f,
-        ),
-        generatingTasks: false,
-      }));
-    } catch (error) {
-      set({ generatingTasks: false, tasksError: error.message });
-    }
-  },
-
-  /* ---- Reset ---- */
-  resetAll: () =>
-    set({
+      /* ---- Navigation ---- */
       view: "dashboard",
+      setView: (view) => set({ view, selectedFeatureId: null }),
+
+      /* ---- Sources ---- */
       sources: [],
+      addSource: (source) =>
+        set((state) => ({
+          sources: [
+            ...state.sources,
+            {
+              ...source,
+              id:
+                source.id ||
+                `src-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              uploadedAt: new Date().toISOString(),
+            },
+          ],
+        })),
+      removeSource: (id) =>
+        set((state) => ({
+          sources: state.sources.filter((s) => s.id !== id),
+        })),
+      loadSampleData: () =>
+        set({
+          sources: SAMPLE_SOURCES,
+          insights: [],
+          features: [],
+          selectedFeatureId: null,
+        }),
+
+      /* ---- Insights ---- */
       insights: [],
-      features: [],
-      selectedFeatureId: null,
       analyzing: false,
-      recommending: false,
-      generatingSpec: false,
-      generatingTasks: false,
       analyzeError: null,
+
+      analyzeSources: async () => {
+        const { sources } = get();
+        if (sources.length === 0) return;
+
+        set({ analyzing: true, analyzeError: null });
+        try {
+          const res = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sources }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Analysis failed");
+
+          set({
+            insights: data.insights,
+            analyzing: false,
+            view: "insights",
+          });
+        } catch (error) {
+          set({ analyzing: false, analyzeError: error.message });
+        }
+      },
+
+      /* ---- Features ---- */
+      features: [],
+      recommending: false,
       recommendError: null,
+      selectedFeatureId: null,
+
+      recommendFeatures: async () => {
+        const { insights, sources } = get();
+        if (insights.length === 0) return;
+
+        set({ recommending: true, recommendError: null });
+        try {
+          const productContext = sources.map((s) => s.name).join(", ");
+          const res = await fetch("/api/recommend", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ insights, productContext }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Recommendation failed");
+
+          set({
+            features: data.features,
+            recommending: false,
+            view: "features",
+          });
+        } catch (error) {
+          set({ recommending: false, recommendError: error.message });
+        }
+      },
+
+      selectFeature: (id) =>
+        set({ selectedFeatureId: id, view: "feature-detail" }),
+
+      /* ---- Spec generation ---- */
+      generatingSpec: false,
       specError: null,
+
+      generateSpec: async (featureId) => {
+        const { features, insights } = get();
+        const feature = features.find((f) => f.id === featureId);
+        if (!feature) return;
+
+        set({ generatingSpec: true, specError: null });
+        try {
+          const relatedInsights = insights.filter((i) =>
+            feature.insightIds?.includes(i.id),
+          );
+          const res = await fetch("/api/spec", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ feature, insights: relatedInsights }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Spec generation failed");
+
+          set((state) => ({
+            features: state.features.map((f) =>
+              f.id === featureId ? { ...f, spec: data.spec } : f,
+            ),
+            generatingSpec: false,
+          }));
+        } catch (error) {
+          set({ generatingSpec: false, specError: error.message });
+        }
+      },
+
+      /* ---- Task generation ---- */
+      generatingTasks: false,
       tasksError: null,
+
+      generateTasks: async (featureId) => {
+        const { features } = get();
+        const feature = features.find((f) => f.id === featureId);
+        if (!feature || !feature.spec) return;
+
+        set({ generatingTasks: true, tasksError: null });
+        try {
+          const res = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ feature, spec: feature.spec }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Task generation failed");
+
+          set((state) => ({
+            features: state.features.map((f) =>
+              f.id === featureId ? { ...f, tasks: data.tasks } : f,
+            ),
+            generatingTasks: false,
+          }));
+        } catch (error) {
+          set({ generatingTasks: false, tasksError: error.message });
+        }
+      },
+
+      /* ---- Roadmap ---- */
+      roadmapItems: [],
+
+      addToRoadmap: (featureId, sprint = "backlog") => {
+        const { features, roadmapItems } = get();
+        if (roadmapItems.some((r) => r.featureId === featureId)) return;
+        const feature = features.find((f) => f.id === featureId);
+        if (!feature) return;
+        set({
+          roadmapItems: [
+            ...roadmapItems,
+            {
+              id: `rm-${Date.now()}`,
+              featureId,
+              sprint,
+              pinned: false,
+              assigneeId: null,
+              storyPoints: feature.effort || 0,
+              engDays: null,
+              status: "planned", // planned | in-progress | done
+              addedAt: new Date().toISOString(),
+            },
+          ],
+        });
+      },
+
+      removeFromRoadmap: (featureId) =>
+        set((state) => ({
+          roadmapItems: state.roadmapItems.filter(
+            (r) => r.featureId !== featureId,
+          ),
+        })),
+
+      moveRoadmapItem: (featureId, newSprint) =>
+        set((state) => ({
+          roadmapItems: state.roadmapItems.map((r) =>
+            r.featureId === featureId ? { ...r, sprint: newSprint } : r,
+          ),
+        })),
+
+      togglePinRoadmapItem: (featureId) =>
+        set((state) => ({
+          roadmapItems: state.roadmapItems.map((r) =>
+            r.featureId === featureId ? { ...r, pinned: !r.pinned } : r,
+          ),
+        })),
+
+      updateRoadmapItem: (featureId, updates) =>
+        set((state) => ({
+          roadmapItems: state.roadmapItems.map((r) =>
+            r.featureId === featureId ? { ...r, ...updates } : r,
+          ),
+        })),
+
+      addAllToRoadmap: () => {
+        const { features, roadmapItems } = get();
+        const existing = new Set(roadmapItems.map((r) => r.featureId));
+        const newItems = features
+          .filter((f) => !existing.has(f.id))
+          .map((f, i) => ({
+            id: `rm-${Date.now()}-${i}`,
+            featureId: f.id,
+            sprint: i < 3 ? "sprint-1" : i < 5 ? "sprint-2" : "sprint-3",
+            pinned: false,
+            assigneeId: null,
+            storyPoints: f.effort || 0,
+            engDays: null,
+            status: "planned",
+            addedAt: new Date().toISOString(),
+          }));
+        set({ roadmapItems: [...roadmapItems, ...newItems] });
+      },
+
+      /* ---- Reset ---- */
+      resetAll: () =>
+        set({
+          view: "dashboard",
+          sources: [],
+          insights: [],
+          features: [],
+          roadmapItems: [],
+          selectedFeatureId: null,
+          analyzing: false,
+          recommending: false,
+          generatingSpec: false,
+          generatingTasks: false,
+          analyzeError: null,
+          recommendError: null,
+          specError: null,
+          tasksError: null,
+        }),
     }),
-}));
+    {
+      name: "daisy-store",
+      partialize: (state) => ({
+        showApp: state.showApp,
+        sources: state.sources,
+        insights: state.insights,
+        features: state.features,
+        roadmapItems: state.roadmapItems,
+      }),
+    },
+  ),
+);
 
 export default useProductStore;
