@@ -6,11 +6,12 @@ The chatbot uses **Pinecone** for retrieval: the board (sources, insights, featu
 
 1. **Pinecone**
    - Create an index in the [Pinecone console](https://app.pinecone.io) with:
-     - **Dimension:** `1536` (for text-embedding-3-small)
+     - **Dimension:** `1536` (default) or `1024` — must match `RAG_EMBED_DIMENSION` (see below)
      - **Metric:** cosine (default)
    - Set env vars:
      - `PINECONE_API_KEY` — your Pinecone API key
      - `PINECONE_INDEX` — index name (default: `daisy-board`)
+   - If your index uses **1024** dimensions, set `RAG_EMBED_DIMENSION=1024` so embeddings match.
 
 2. **OpenAI**
    - RAG embeddings use the OpenAI API. Set `OPENAI_API_KEY` (same as for chat if you use OpenAI).
