@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import useProductStore from "@/store/useProductStore";
+import EditableField from "@/components/EditableField";
 
 const TYPE_CONFIG = {
   pain_point: {
@@ -48,9 +49,9 @@ const fadeUp = {
 
 export default function InsightsView() {
   const insights = useProductStore((s) => s.insights);
-  const recommendFeatures = useProductStore((s) => s.recommendFeatures);
-  const recommending = useProductStore((s) => s.recommending);
-  const recommendError = useProductStore((s) => s.recommendError);
+  const setView = useProductStore((s) => s.setView);
+  const features = useProductStore((s) => s.features);
+  const updateInsight = useProductStore((s) => s.updateInsight);
 
   const [filter, setFilter] = useState("all");
   const [expandedId, setExpandedId] = useState(null);
@@ -84,29 +85,19 @@ export default function InsightsView() {
           </p>
         </div>
         <button
-          onClick={recommendFeatures}
-          disabled={recommending || insights.length === 0}
+          onClick={() => setView("features")}
+          disabled={insights.length === 0}
           className="px-4 py-2 bg-brand-700 hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-[13px] font-medium transition-colors flex items-center gap-2"
         >
-          {recommending ? (
-            <>
-              <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Generating...
-            </>
-          ) : (
-            "What Should We Build?"
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+          </svg>
+          Design Features
+          {features.length > 0 && (
+            <span className="bg-white/20 text-white text-[10px] font-semibold px-1.5 rounded-full">{features.length}</span>
           )}
         </button>
       </motion.div>
-
-      {recommendError && (
-        <motion.div
-          variants={fadeUp}
-          className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200"
-        >
-          <p className="text-sm text-red-600">{recommendError}</p>
-        </motion.div>
-      )}
 
       {/* Filters */}
       <motion.div
@@ -187,24 +178,48 @@ export default function InsightsView() {
                   </div>
                 </div>
 
-                <h3 className="text-[13px] font-semibold text-gray-800 mb-1">
-                  {insight.title}
-                </h3>
-                <p className="text-[12px] text-gray-500 leading-relaxed line-clamp-2">
-                  {insight.description}
-                </p>
+                <EditableField
+                  value={insight.title}
+                  onSave={(v) => updateInsight(insight.id, { title: v })}
+                  type="text"
+                  label="Insight Title"
+                  context={{ sectionName: 'insightTitle', insightType: insight.type }}
+                >
+                  <h3 className="text-[13px] font-semibold text-gray-800 mb-1">
+                    {insight.title}
+                  </h3>
+                </EditableField>
+                <EditableField
+                  value={insight.description}
+                  onSave={(v) => updateInsight(insight.id, { description: v })}
+                  type="textarea"
+                  label="Insight Description"
+                  context={{ sectionName: 'insightDescription', insightType: insight.type, insightTitle: insight.title }}
+                >
+                  <p className="text-[12px] text-gray-500 leading-relaxed line-clamp-2">
+                    {insight.description}
+                  </p>
+                </EditableField>
 
                 {insight.tags?.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {insight.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-400"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                  <EditableField
+                    value={insight.tags}
+                    onSave={(v) => updateInsight(insight.id, { tags: v })}
+                    type="list"
+                    label="Tags"
+                    context={{ sectionName: 'insightTags', insightTitle: insight.title }}
+                  >
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {insight.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-400"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </EditableField>
                 )}
               </div>
 
@@ -218,6 +233,26 @@ export default function InsightsView() {
                     className="overflow-hidden"
                   >
                     <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-2">
+                      {/* Editable severity */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Severity</span>
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((level) => (
+                            <button
+                              key={level}
+                              onClick={(e) => { e.stopPropagation(); updateInsight(insight.id, { severity: level }); }}
+                              className={`w-5 h-5 rounded text-[10px] font-bold transition-colors ${
+                                level <= insight.severity
+                                  ? level >= 4 ? 'bg-red-100 text-red-600' : level >= 3 ? 'bg-amber-100 text-amber-600' : 'bg-gray-200 text-gray-600'
+                                  : 'bg-gray-50 text-gray-300 hover:bg-gray-100'
+                              }`}
+                            >
+                              {level}
+                            </button>
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-gray-400">{SEVERITY[insight.severity]}</span>
+                      </div>
                       <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
                         Quotes
                       </p>

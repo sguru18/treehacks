@@ -9,38 +9,38 @@ import { persist } from "zustand/middleware";
 export const TEAM_MEMBERS = [
   {
     id: "as",
-    name: "Aaditya S.",
+    name: "Elon M.",
     role: "Admin",
     color: "bg-brand-600",
     initials: "AS",
   },
   {
-    id: "pm",
-    name: "Priya M.",
+    id: "ap",
+    name: "Sam A.",
     role: "PM",
     color: "bg-violet-500",
     initials: "PM",
   },
   {
-    id: "jt",
-    name: "Jake T.",
+    id: "sg",
+    name: "Jensen H.",
     role: "Eng Lead",
     color: "bg-blue-500",
-    initials: "JT",
+    initials: "SG",
   },
   {
-    id: "ml",
-    name: "Mia L.",
+    id: "ps",
+    name: "Jeffrey E.",
     role: "Designer",
     color: "bg-pink-500",
     initials: "ML",
   },
   {
-    id: "nk",
-    name: "Noah K.",
+    id: "sa",
+    name: "Sam A.",
     role: "Data",
     color: "bg-amber-500",
-    initials: "NK",
+    initials: "SA",
   },
 ];
 
@@ -252,6 +252,35 @@ const useProductStore = create(
       selectFeature: (id) =>
         set({ selectedFeatureId: id, view: "feature-detail" }),
 
+      addFeature: (featureData) => {
+        const id = `feat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const impact = featureData.impact || 5;
+        const effort = featureData.effort || 5;
+        const confidence = featureData.confidence || 5;
+        const priorityScore =
+          Math.round(((impact * confidence) / Math.max(effort, 1)) * 10) / 10;
+
+        set((state) => ({
+          features: [
+            ...state.features,
+            {
+              ...featureData,
+              id,
+              priorityScore,
+              status: "recommended",
+              spec: null,
+              tasks: null,
+            },
+          ],
+        }));
+      },
+
+      removeFeature: (id) =>
+        set((state) => ({
+          features: state.features.filter((f) => f.id !== id),
+          roadmapItems: state.roadmapItems.filter((r) => r.featureId !== id),
+        })),
+
       /* ---- Spec generation ---- */
       generatingSpec: false,
       specError: null,
@@ -431,6 +460,61 @@ const useProductStore = create(
           throw error;
         }
       },
+
+      /* ---- Granular updates (human-in-the-loop editing) ---- */
+      updateInsight: (id, updates) =>
+        set((state) => ({
+          insights: state.insights.map((i) =>
+            i.id === id ? { ...i, ...updates } : i,
+          ),
+        })),
+
+      updateFeature: (id, updates) =>
+        set((state) => ({
+          features: state.features.map((f) =>
+            f.id === id
+              ? {
+                  ...f,
+                  ...updates,
+                  // Recalculate priority score if impact/effort/confidence changed
+                  priorityScore:
+                    updates.impact !== undefined ||
+                    updates.effort !== undefined ||
+                    updates.confidence !== undefined
+                      ? Math.round(
+                          ((((updates.impact ?? f.impact) || 5) *
+                            ((updates.confidence ?? f.confidence) || 5)) /
+                            Math.max((updates.effort ?? f.effort) || 5, 1)) *
+                            10,
+                        ) / 10
+                      : f.priorityScore,
+                }
+              : f,
+          ),
+        })),
+
+      updateSpecSection: (featureId, sectionKey, value) =>
+        set((state) => ({
+          features: state.features.map((f) =>
+            f.id === featureId && f.spec
+              ? { ...f, spec: { ...f.spec, [sectionKey]: value } }
+              : f,
+          ),
+        })),
+
+      updateTask: (featureId, taskId, updates) =>
+        set((state) => ({
+          features: state.features.map((f) =>
+            f.id === featureId && f.tasks
+              ? {
+                  ...f,
+                  tasks: f.tasks.map((t) =>
+                    t.id === taskId ? { ...t, ...updates } : t,
+                  ),
+                }
+              : f,
+          ),
+        })),
 
       /* ---- Roadmap ---- */
       roadmapItems: [],

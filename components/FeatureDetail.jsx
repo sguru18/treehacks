@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useProductStore from '@/store/useProductStore';
+import EditableField from '@/components/EditableField';
 
 const TASK_TYPE = {
   frontend: { label: 'Frontend', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-200' },
@@ -111,6 +112,9 @@ export default function FeatureDetail() {
   const generatingEstimate = useProductStore((s) => s.generatingEstimate);
   const addToRoadmap = useProductStore((s) => s.addToRoadmap);
   const roadmapItems = useProductStore((s) => s.roadmapItems);
+  const updateSpecSection = useProductStore((s) => s.updateSpecSection);
+  const updateTask = useProductStore((s) => s.updateTask);
+  const updateFeature = useProductStore((s) => s.updateFeature);
 
   const [tab, setTab] = useState('overview');
   const [expandedTaskId, setExpandedTaskId] = useState(null);
@@ -162,8 +166,24 @@ export default function FeatureDetail() {
             </span>
           </div>
           <div className="flex-1">
-            <h1 className="text-lg font-semibold text-gray-900 mb-1">{feature.title}</h1>
-            <p className="text-[13px] text-gray-500 leading-relaxed mb-2">{feature.description}</p>
+            <EditableField
+              value={feature.title}
+              onSave={(v) => updateFeature(feature.id, { title: v })}
+              type="text"
+              label="Feature Title"
+              context={{ featureTitle: feature.title, sectionName: 'title' }}
+            >
+              <h1 className="text-lg font-semibold text-gray-900 mb-1">{feature.title}</h1>
+            </EditableField>
+            <EditableField
+              value={feature.description}
+              onSave={(v) => updateFeature(feature.id, { description: v })}
+              type="textarea"
+              label="Feature Description"
+              context={{ featureTitle: feature.title, sectionName: 'description' }}
+            >
+              <p className="text-[13px] text-gray-500 leading-relaxed mb-2">{feature.description}</p>
+            </EditableField>
             <div className="flex items-center gap-4 text-[11px] mb-3">
               <span className="text-gray-400">Impact <span className="font-semibold text-brand-700">{feature.impact}/10</span></span>
               <span className="text-gray-400">Effort <span className="font-semibold text-amber-600">{feature.effort}/10</span></span>
@@ -219,7 +239,15 @@ export default function FeatureDetail() {
         {tab === 'overview' && (
           <motion.div key="ov" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="space-y-4">
             <Section icon="R" title="Rationale">
-              <p className="text-[13px] text-gray-600 leading-relaxed whitespace-pre-line">{feature.rationale}</p>
+              <EditableField
+                value={feature.rationale}
+                onSave={(v) => updateFeature(feature.id, { rationale: v })}
+                type="textarea"
+                label="Rationale"
+                context={{ featureTitle: feature.title, sectionName: 'rationale' }}
+              >
+                <p className="text-[13px] text-gray-600 leading-relaxed whitespace-pre-line">{feature.rationale}</p>
+              </EditableField>
             </Section>
 
             {related.length > 0 && (
@@ -279,54 +307,110 @@ export default function FeatureDetail() {
             {hasSpec && (
               <>
                 <Section icon="U" title="User Stories">
-                  <ol className="space-y-1.5 list-decimal list-inside">
-                    {feature.spec.userStories?.map((s, i) => (
-                      <li key={i} className="text-[12px] text-gray-600 leading-relaxed">{s}</li>
-                    ))}
-                  </ol>
+                  <EditableField
+                    value={feature.spec.userStories}
+                    onSave={(v) => updateSpecSection(feature.id, 'userStories', v)}
+                    type="list"
+                    label="User Stories"
+                    context={{ featureTitle: feature.title, featureDescription: feature.description, sectionName: 'userStories' }}
+                  >
+                    <ol className="space-y-1.5 list-decimal list-inside">
+                      {feature.spec.userStories?.map((s, i) => (
+                        <li key={i} className="text-[12px] text-gray-600 leading-relaxed">{s}</li>
+                      ))}
+                    </ol>
+                  </EditableField>
                 </Section>
 
                 <Section icon="V" title="UI Changes">
-                  <p className="text-[12px] text-gray-600 leading-relaxed whitespace-pre-line">{feature.spec.uiChanges}</p>
+                  <EditableField
+                    value={feature.spec.uiChanges}
+                    onSave={(v) => updateSpecSection(feature.id, 'uiChanges', v)}
+                    type="textarea"
+                    label="UI Changes"
+                    context={{ featureTitle: feature.title, featureDescription: feature.description, sectionName: 'uiChanges' }}
+                  >
+                    <p className="text-[12px] text-gray-600 leading-relaxed whitespace-pre-line">{feature.spec.uiChanges}</p>
+                  </EditableField>
                 </Section>
 
                 <Section icon="D" title="Data Model Changes">
-                  <p className="text-[12px] text-gray-600 leading-relaxed whitespace-pre-line">{feature.spec.dataModelChanges}</p>
+                  <EditableField
+                    value={feature.spec.dataModelChanges}
+                    onSave={(v) => updateSpecSection(feature.id, 'dataModelChanges', v)}
+                    type="textarea"
+                    label="Data Model Changes"
+                    context={{ featureTitle: feature.title, featureDescription: feature.description, sectionName: 'dataModelChanges' }}
+                  >
+                    <p className="text-[12px] text-gray-600 leading-relaxed whitespace-pre-line">{feature.spec.dataModelChanges}</p>
+                  </EditableField>
                 </Section>
 
                 <Section icon="W" title="Workflow Changes">
-                  <p className="text-[12px] text-gray-600 leading-relaxed whitespace-pre-line">{feature.spec.workflowChanges}</p>
+                  <EditableField
+                    value={feature.spec.workflowChanges}
+                    onSave={(v) => updateSpecSection(feature.id, 'workflowChanges', v)}
+                    type="textarea"
+                    label="Workflow Changes"
+                    context={{ featureTitle: feature.title, featureDescription: feature.description, sectionName: 'workflowChanges' }}
+                  >
+                    <p className="text-[12px] text-gray-600 leading-relaxed whitespace-pre-line">{feature.spec.workflowChanges}</p>
+                  </EditableField>
                 </Section>
 
                 <Section icon="M" title="Success Metrics">
-                  <ul className="space-y-1">
-                    {feature.spec.successMetrics?.map((m, i) => (
-                      <li key={i} className="text-[12px] text-gray-600 flex items-start gap-2">
-                        <svg className="w-3.5 h-3.5 text-brand-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {m}
-                      </li>
-                    ))}
-                  </ul>
+                  <EditableField
+                    value={feature.spec.successMetrics}
+                    onSave={(v) => updateSpecSection(feature.id, 'successMetrics', v)}
+                    type="list"
+                    label="Success Metrics"
+                    context={{ featureTitle: feature.title, featureDescription: feature.description, sectionName: 'successMetrics' }}
+                  >
+                    <ul className="space-y-1">
+                      {feature.spec.successMetrics?.map((m, i) => (
+                        <li key={i} className="text-[12px] text-gray-600 flex items-start gap-2">
+                          <svg className="w-3.5 h-3.5 text-brand-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {m}
+                        </li>
+                      ))}
+                    </ul>
+                  </EditableField>
                 </Section>
 
                 {feature.spec.technicalNotes && (
                   <Section icon="T" title="Technical Notes">
-                    <p className="text-[12px] text-gray-600 leading-relaxed whitespace-pre-line">{feature.spec.technicalNotes}</p>
+                    <EditableField
+                      value={feature.spec.technicalNotes}
+                      onSave={(v) => updateSpecSection(feature.id, 'technicalNotes', v)}
+                      type="textarea"
+                      label="Technical Notes"
+                      context={{ featureTitle: feature.title, featureDescription: feature.description, sectionName: 'technicalNotes' }}
+                    >
+                      <p className="text-[12px] text-gray-600 leading-relaxed whitespace-pre-line">{feature.spec.technicalNotes}</p>
+                    </EditableField>
                   </Section>
                 )}
 
                 {feature.spec.acceptanceCriteria?.length > 0 && (
                   <Section icon="A" title="Acceptance Criteria">
-                    <ul className="space-y-1">
-                      {feature.spec.acceptanceCriteria.map((c, i) => (
-                        <li key={i} className="text-[12px] text-gray-600 flex items-start gap-2">
-                          <span className="w-3.5 h-3.5 rounded border border-gray-300 mt-0.5 shrink-0" />
-                          {c}
-                        </li>
-                      ))}
-                    </ul>
+                    <EditableField
+                      value={feature.spec.acceptanceCriteria}
+                      onSave={(v) => updateSpecSection(feature.id, 'acceptanceCriteria', v)}
+                      type="list"
+                      label="Acceptance Criteria"
+                      context={{ featureTitle: feature.title, featureDescription: feature.description, sectionName: 'acceptanceCriteria' }}
+                    >
+                      <ul className="space-y-1">
+                        {feature.spec.acceptanceCriteria.map((c, i) => (
+                          <li key={i} className="text-[12px] text-gray-600 flex items-start gap-2">
+                            <span className="w-3.5 h-3.5 rounded border border-gray-300 mt-0.5 shrink-0" />
+                            {c}
+                          </li>
+                        ))}
+                      </ul>
+                    </EditableField>
                   </Section>
                 )}
 
@@ -400,7 +484,15 @@ export default function FeatureDetail() {
                               <span className={`text-[10px] font-medium ${ef.color}`}>{ef.label} · {ef.desc}</span>
                               {deps && <span className="text-[10px] text-gray-400">needs {deps}</span>}
                             </div>
-                            <h4 className="text-[13px] font-semibold text-gray-800">{task.title}</h4>
+                            <EditableField
+                              value={task.title}
+                              onSave={(v) => updateTask(feature.id, task.id, { title: v })}
+                              type="text"
+                              label="Task Title"
+                              context={{ featureTitle: feature.title, sectionName: 'taskTitle', taskTitle: task.title }}
+                            >
+                              <h4 className="text-[13px] font-semibold text-gray-800">{task.title}</h4>
+                            </EditableField>
                             <p className="text-[11px] text-gray-400 line-clamp-1 mt-0.5">{task.description}</p>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
@@ -418,20 +510,36 @@ export default function FeatureDetail() {
                             <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-3">
                               <div>
                                 <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1">Description</p>
-                                <p className="text-[12px] text-gray-600 leading-relaxed">{task.description}</p>
+                                <EditableField
+                                  value={task.description}
+                                  onSave={(v) => updateTask(feature.id, task.id, { description: v })}
+                                  type="textarea"
+                                  label="Task Description"
+                                  context={{ featureTitle: feature.title, sectionName: 'taskDescription', taskTitle: task.title }}
+                                >
+                                  <p className="text-[12px] text-gray-600 leading-relaxed">{task.description}</p>
+                                </EditableField>
                               </div>
 
                               {task.acceptanceCriteria?.length > 0 && (
                                 <div>
                                   <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1">Acceptance Criteria</p>
-                                  <ul className="space-y-0.5">
-                                    {task.acceptanceCriteria.map((ac, i) => (
-                                      <li key={i} className="text-[12px] text-gray-600 flex items-start gap-2">
-                                        <span className="w-3 h-3 rounded border border-gray-200 mt-0.5 shrink-0" />
-                                        {ac}
-                                      </li>
-                                    ))}
-                                  </ul>
+                                  <EditableField
+                                    value={task.acceptanceCriteria}
+                                    onSave={(v) => updateTask(feature.id, task.id, { acceptanceCriteria: v })}
+                                    type="list"
+                                    label="Acceptance Criteria"
+                                    context={{ featureTitle: feature.title, sectionName: 'taskAcceptanceCriteria', taskTitle: task.title }}
+                                  >
+                                    <ul className="space-y-0.5">
+                                      {task.acceptanceCriteria.map((ac, i) => (
+                                        <li key={i} className="text-[12px] text-gray-600 flex items-start gap-2">
+                                          <span className="w-3 h-3 rounded border border-gray-200 mt-0.5 shrink-0" />
+                                          {ac}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </EditableField>
                                 </div>
                               )}
 
@@ -440,9 +548,17 @@ export default function FeatureDetail() {
                                   <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Agent Prompt</p>
                                   <CopyBtn text={task.agentPrompt} label="Copy" />
                                 </div>
-                                <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 max-h-56 overflow-y-auto custom-scrollbar">
-                                  <pre className="text-[11px] text-gray-700 whitespace-pre-wrap leading-relaxed font-mono">{task.agentPrompt}</pre>
-                                </div>
+                                <EditableField
+                                  value={task.agentPrompt}
+                                  onSave={(v) => updateTask(feature.id, task.id, { agentPrompt: v })}
+                                  type="textarea"
+                                  label="Agent Prompt"
+                                  context={{ featureTitle: feature.title, sectionName: 'agentPrompt', taskTitle: task.title }}
+                                >
+                                  <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 max-h-56 overflow-y-auto custom-scrollbar">
+                                    <pre className="text-[11px] text-gray-700 whitespace-pre-wrap leading-relaxed font-mono">{task.agentPrompt}</pre>
+                                  </div>
+                                </EditableField>
                               </div>
                             </div>
                           </motion.div>
