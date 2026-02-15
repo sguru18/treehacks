@@ -400,7 +400,6 @@ const useProductStore = create(
     {
       name: "daisy-store",
       partialize: (state) => ({
-        showApp: state.showApp,
         view: state.view,
         selectedFeatureId: state.selectedFeatureId,
         sources: state.sources,

@@ -10,6 +10,7 @@ import InsightsView from "@/components/InsightsView";
 import FeaturesView from "@/components/FeaturesView";
 import FeatureDetail from "@/components/FeatureDetail";
 import RoadmapView from "@/components/RoadmapView";
+import ChatPanel from "@/components/ChatPanel";
 import { AnimatePresence, motion } from "framer-motion";
 
 const VIEWS = {
@@ -63,6 +64,7 @@ export default function Home() {
           </AnimatePresence>
         </div>
       </main>
+      <ChatPanel />
     </div>
   );
 }
