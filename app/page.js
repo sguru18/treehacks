@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import useProductStore from "@/store/useProductStore";
 import LandingPage from "@/components/LandingPage";
 import Sidebar from "@/components/Sidebar";
@@ -24,6 +25,21 @@ export default function Home() {
   const showApp = useProductStore((s) => s.showApp);
   const view = useProductStore((s) => s.view);
   const View = VIEWS[view] || Dashboard;
+
+  /* SSR guard — only render after first client-side mount */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-gray-400">Loading…</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!showApp) {
     return <LandingPage />;

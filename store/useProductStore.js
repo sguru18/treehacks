@@ -141,6 +141,9 @@ This would save me 2+ hours per week and prevent burnout from uneven task distri
 const useProductStore = create(
   persist(
     (set, get) => ({
+      /* ---- Hydration flag (SSR-safe) ---- */
+      _hasHydrated: false,
+
       /* ---- App state ---- */
       showApp: false,
       enterApp: () => set({ showApp: true, view: "dashboard" }),
@@ -398,11 +401,16 @@ const useProductStore = create(
       name: "daisy-store",
       partialize: (state) => ({
         showApp: state.showApp,
+        view: state.view,
+        selectedFeatureId: state.selectedFeatureId,
         sources: state.sources,
         insights: state.insights,
         features: state.features,
         roadmapItems: state.roadmapItems,
       }),
+      onRehydrateStorage: () => () => {
+        useProductStore.setState({ _hasHydrated: true });
+      },
     },
   ),
 );
