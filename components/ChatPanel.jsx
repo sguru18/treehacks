@@ -4,6 +4,18 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useProductStore from '@/store/useProductStore';
 
+const CHAT_SESSION_KEY = 'daisy-chat-session';
+
+function getOrCreateSessionId() {
+  if (typeof window === 'undefined') return null;
+  let id = localStorage.getItem(CHAT_SESSION_KEY);
+  if (!id) {
+    id = 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
+    localStorage.setItem(CHAT_SESSION_KEY, id);
+  }
+  return id;
+}
+
 /* ---- Markdown-lite renderer (bold, bullets, code) ---- */
 function Markdown({ text }) {
   if (!text) return null;
@@ -69,6 +81,18 @@ export default function ChatPanel() {
     if (open) setTimeout(() => inputRef.current?.focus(), 200);
   }, [open]);
 
+  // Index board into Pinecone for RAG when opening chat (so first query can retrieve)
+  useEffect(() => {
+    if (!open) return;
+    const sessionId = getOrCreateSessionId();
+    if (!sessionId) return;
+    fetch('/api/chat/index', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, board }),
+    }).catch((err) => console.warn('[ChatPanel] Index request failed:', err));
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps -- index once when opening; board captured at that time
+
   const sendMessage = useCallback(async (text) => {
     if (!text.trim() || streaming) return;
 
@@ -83,12 +107,14 @@ export default function ChatPanel() {
     setMessages([...newMessages, assistantMsg]);
 
     try {
+      const sessionId = getOrCreateSessionId();
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
           board,
+          sessionId: sessionId || undefined,
         }),
       });
 

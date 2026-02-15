@@ -1,10 +1,11 @@
 /**
  * POST /api/chat
- * RAG chatbot — streams an answer grounded in the full board context
- * (sources, insights, features, specs, tasks, roadmap).
+ * RAG chatbot — when Pinecone + sessionId are set, retrieves relevant board chunks
+ * and uses them as context. Otherwise falls back to full board context.
  */
 
 import { chatStream } from '@/lib/llm';
+import { retrieve, isPineconeConfigured } from '@/lib/rag/pinecone';
 
 const SYSTEM_PROMPT = `You are Daisy, an expert AI product management assistant. You have complete knowledge of the user's product board — every data source, customer insight, feature recommendation, specification, development task, and roadmap item.
 
@@ -90,14 +91,27 @@ function buildContext(board) {
     });
   }
 
-  // Roadmap
+  // Roadmap (group by sprint, human-readable)
   if (board.roadmapItems?.length) {
-    parts.push('\n## ROADMAP (' + board.roadmapItems.length + ' items)\n');
+    const sprintLabel = (s) => (s === 'backlog' ? 'Backlog' : s.replace(/^sprint-(\d+)$/i, 'Sprint $1'));
+    const bySprint = {};
     board.roadmapItems.forEach((r) => {
+      const s = r.sprint || 'backlog';
+      if (!bySprint[s]) bySprint[s] = [];
       const feature = board.features?.find((f) => f.id === r.featureId);
-      parts.push(`- ${feature?.title || r.featureId}: Sprint=${r.sprint}, Status=${r.status}, Points=${r.storyPoints}`);
+      const title = feature?.title || r.featureId;
+      const points = r.storyPoints != null ? ` (${r.storyPoints} points)` : '';
+      bySprint[s].push(title + points);
     });
-    parts.push('');
+    const order = ['backlog', 'sprint-1', 'sprint-2', 'sprint-3'];
+    parts.push('\n## ROADMAP\n');
+    order.forEach((sprintId) => {
+      const items = bySprint[sprintId];
+      if (!items?.length) return;
+      parts.push('**' + sprintLabel(sprintId) + '**');
+      items.forEach((line) => parts.push('- ' + line));
+      parts.push('');
+    });
   }
 
   return parts.join('\n');
@@ -105,13 +119,35 @@ function buildContext(board) {
 
 export async function POST(request) {
   try {
-    const { messages, board } = await request.json();
+    const { messages, board, sessionId } = await request.json();
 
     if (!messages?.length) {
       return Response.json({ error: 'Messages required' }, { status: 400 });
     }
 
-    const context = buildContext(board || {});
+    let context = '';
+
+    if (isPineconeConfigured() && sessionId) {
+      const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
+      const queryText = lastUserMessage?.content || messages[messages.length - 1]?.content || '';
+      try {
+        const chunks = await retrieve(sessionId, queryText);
+        if (chunks.length > 0) {
+          context = chunks.join('\n\n---\n\n');
+        }
+      } catch (err) {
+        console.warn('[API /chat] RAG retrieve failed, falling back to full board:', err.message);
+      }
+    }
+
+    if (!context && board) {
+      context = buildContext(board);
+    }
+
+    if (!context) {
+      context = '(No board data indexed or provided. Ask the user to add sources and run indexing, or send the board with the request.)';
+    }
+
     const systemMessage = SYSTEM_PROMPT + context;
 
     const llmMessages = [
