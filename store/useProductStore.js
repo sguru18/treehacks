@@ -315,6 +315,123 @@ const useProductStore = create(
         }
       },
 
+      /* ---- Research / Critic / Risk / Estimate (validation agents) ---- */
+      generatingResearch: false,
+      generatingCritic: false,
+      generatingRisk: false,
+      generatingEstimate: false,
+
+      generateResearch: async (featureId) => {
+        const { features, sources } = get();
+        const feature = features.find((f) => f.id === featureId);
+        if (!feature) return;
+        set({ generatingResearch: true });
+        try {
+          const productContext = sources.map((s) => s.name).join(", ");
+          const res = await fetch("/api/research-feature", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ feature, productContext }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Research failed");
+          set((state) => ({
+            features: state.features.map((f) =>
+              f.id === featureId ? { ...f, research: data.research } : f,
+            ),
+            generatingResearch: false,
+          }));
+        } catch (error) {
+          set({ generatingResearch: false });
+          throw error;
+        }
+      },
+
+      generateCritic: async (featureId) => {
+        const { features, insights } = get();
+        const feature = features.find((f) => f.id === featureId);
+        if (!feature) return;
+        set({ generatingCritic: true });
+        try {
+          const relatedInsights = insights.filter((i) =>
+            feature.insightIds?.includes(i.id),
+          );
+          const res = await fetch("/api/critic", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ feature, insights: relatedInsights }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Critic failed");
+          set((state) => ({
+            features: state.features.map((f) =>
+              f.id === featureId ? { ...f, critique: data.critique } : f,
+            ),
+            generatingCritic: false,
+          }));
+        } catch (error) {
+          set({ generatingCritic: false });
+          throw error;
+        }
+      },
+
+      generateRisk: async (featureId) => {
+        const { features } = get();
+        const feature = features.find((f) => f.id === featureId);
+        if (!feature?.spec) return;
+        set({ generatingRisk: true });
+        try {
+          const res = await fetch("/api/risk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              spec: feature.spec,
+              featureTitle: feature.title,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Risk assessment failed");
+          set((state) => ({
+            features: state.features.map((f) =>
+              f.id === featureId ? { ...f, risk: data.risk } : f,
+            ),
+            generatingRisk: false,
+          }));
+        } catch (error) {
+          set({ generatingRisk: false });
+          throw error;
+        }
+      },
+
+      generateEstimate: async (featureId) => {
+        const { features } = get();
+        const feature = features.find((f) => f.id === featureId);
+        if (!feature) return;
+        set({ generatingEstimate: true });
+        try {
+          const res = await fetch("/api/estimate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              feature,
+              spec: feature.spec || null,
+              tasks: feature.tasks || [],
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Estimate failed");
+          set((state) => ({
+            features: state.features.map((f) =>
+              f.id === featureId ? { ...f, estimate: data.estimate } : f,
+            ),
+            generatingEstimate: false,
+          }));
+        } catch (error) {
+          set({ generatingEstimate: false });
+          throw error;
+        }
+      },
+
       /* ---- Roadmap ---- */
       roadmapItems: [],
 
@@ -401,6 +518,10 @@ const useProductStore = create(
           recommending: false,
           generatingSpec: false,
           generatingTasks: false,
+          generatingResearch: false,
+          generatingCritic: false,
+          generatingRisk: false,
+          generatingEstimate: false,
           analyzeError: null,
           recommendError: null,
           specError: null,

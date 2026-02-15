@@ -99,8 +99,16 @@ export default function FeatureDetail() {
   const setView = useProductStore((s) => s.setView);
   const generateSpec = useProductStore((s) => s.generateSpec);
   const generateTasks = useProductStore((s) => s.generateTasks);
+  const generateResearch = useProductStore((s) => s.generateResearch);
+  const generateCritic = useProductStore((s) => s.generateCritic);
+  const generateRisk = useProductStore((s) => s.generateRisk);
+  const generateEstimate = useProductStore((s) => s.generateEstimate);
   const generatingSpec = useProductStore((s) => s.generatingSpec);
   const generatingTasks = useProductStore((s) => s.generatingTasks);
+  const generatingResearch = useProductStore((s) => s.generatingResearch);
+  const generatingCritic = useProductStore((s) => s.generatingCritic);
+  const generatingRisk = useProductStore((s) => s.generatingRisk);
+  const generatingEstimate = useProductStore((s) => s.generatingEstimate);
   const addToRoadmap = useProductStore((s) => s.addToRoadmap);
   const roadmapItems = useProductStore((s) => s.roadmapItems);
 
@@ -123,10 +131,12 @@ export default function FeatureDetail() {
   const hasSpec = !!feature.spec;
   const hasTasks = !!feature.tasks?.length;
 
+  const hasValidation = !!(feature.research || feature.critique || feature.risk || feature.estimate);
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'spec', label: 'Spec', ready: hasSpec },
     { id: 'tasks', label: 'Tasks', count: feature.tasks?.length },
+    { id: 'validate', label: 'Validate', ready: hasValidation },
   ];
 
   return (
@@ -458,6 +468,141 @@ export default function FeatureDetail() {
                 )}
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* VALIDATE (Research, Critic, Risk, Estimate) */}
+        {tab === 'validate' && (
+          <motion.div key="val" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="space-y-4">
+            <p className="text-[12px] text-gray-500 mb-4">Run these agents to make the feature decision more thorough.</p>
+
+            {/* Research */}
+            <Section icon="🔍" title="Market & competitive research">
+              {feature.research ? (
+                <div className="space-y-2 text-[12px] text-gray-600">
+                  <p className="font-medium text-gray-800">{feature.research.summary}</p>
+                  {feature.research.priorArt?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase mt-2 mb-1">Prior art</p>
+                      <ul className="list-disc list-inside space-y-0.5">{feature.research.priorArt.map((p, i) => <li key={i}>{p}</li>)}</ul>
+                    </div>
+                  )}
+                  {feature.research.competitors?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase mt-2 mb-1">Competitors</p>
+                      <ul className="list-disc list-inside space-y-0.5">{feature.research.competitors.map((c, i) => <li key={i}>{c}</li>)}</ul>
+                    </div>
+                  )}
+                  {feature.research.marketSignal && <p><span className="font-medium text-gray-500">Market:</span> {feature.research.marketSignal}</p>}
+                  {feature.research.buildVsBuy && <p><span className="font-medium text-gray-500">Build vs buy:</span> {feature.research.buildVsBuy}</p>}
+                  {feature.research.risks?.length > 0 && <p><span className="font-medium text-gray-500">Risks:</span> {feature.research.risks.join('; ')}</p>}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => generateResearch(feature.id).catch(() => {})}
+                    disabled={generatingResearch}
+                    className="px-3 py-1.5 bg-brand-700 hover:bg-brand-800 disabled:opacity-50 text-white rounded-lg text-[12px] font-medium"
+                  >
+                    {generatingResearch ? 'Researching...' : 'Run research'}
+                  </button>
+                  <AiBadge />
+                </div>
+              )}
+            </Section>
+
+            {/* Critic */}
+            <Section icon="⚖️" title="Critic (why not build this?)">
+              {feature.critique ? (
+                <div className="space-y-2 text-[12px] text-gray-600">
+                  <p className="font-medium text-gray-800">{feature.critique.summary}</p>
+                  <p><span className="font-medium text-gray-500">Recommendation:</span> {feature.critique.recommendation}</p>
+                  {feature.critique.caveats && <p><span className="font-medium text-gray-500">Caveats:</span> {feature.critique.caveats}</p>}
+                  {feature.critique.counterpoints?.length > 0 && (
+                    <ul className="space-y-1 mt-2">
+                      {feature.critique.counterpoints.map((cp, i) => (
+                        <li key={i} className="flex gap-2"><span className="font-medium text-gray-500 shrink-0">{cp.concern}:</span> {cp.detail}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {feature.critique.alternatives?.length > 0 && <p><span className="font-medium text-gray-500">Alternatives:</span> {feature.critique.alternatives.join('; ')}</p>}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => generateCritic(feature.id).catch(() => {})}
+                    disabled={generatingCritic}
+                    className="px-3 py-1.5 bg-brand-700 hover:bg-brand-800 disabled:opacity-50 text-white rounded-lg text-[12px] font-medium"
+                  >
+                    {generatingCritic ? 'Running critic...' : 'Run critic'}
+                  </button>
+                  <AiBadge />
+                </div>
+              )}
+            </Section>
+
+            {/* Risk (requires spec) */}
+            <Section icon="🛡️" title="Risk (privacy, security, compliance)">
+              {feature.risk ? (
+                <div className="space-y-2 text-[12px] text-gray-600">
+                  <p className="font-medium text-gray-800">{feature.risk.summary}</p>
+                  <p><span className="font-medium text-gray-500">Overall severity:</span> {feature.risk.overallSeverity}</p>
+                  {feature.risk.findings?.length > 0 && (
+                    <ul className="space-y-1.5 mt-2">
+                      {feature.risk.findings.map((f, i) => (
+                        <li key={i} className="p-2 rounded-lg bg-gray-50 border border-gray-100">
+                          <span className={`font-semibold text-[10px] uppercase ${f.severity === 'critical' || f.severity === 'high' ? 'text-red-600' : 'text-gray-500'}`}>{f.category} / {f.severity}</span>
+                          <p>{f.description}</p>
+                          {f.mitigation && <p className="text-[11px] text-gray-500 mt-0.5">→ {f.mitigation}</p>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {feature.risk.mustAddressBeforeShip?.length > 0 && (
+                    <p className="mt-2 text-amber-700 font-medium">Must address before ship: {feature.risk.mustAddressBeforeShip.join('; ')}</p>
+                  )}
+                </div>
+              ) : hasSpec ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => generateRisk(feature.id).catch(() => {})}
+                    disabled={generatingRisk}
+                    className="px-3 py-1.5 bg-brand-700 hover:bg-brand-800 disabled:opacity-50 text-white rounded-lg text-[12px] font-medium"
+                  >
+                    {generatingRisk ? 'Assessing risk...' : 'Assess risk'}
+                  </button>
+                  <AiBadge />
+                </div>
+              ) : (
+                <p className="text-[12px] text-gray-400">Generate a spec first to run risk assessment.</p>
+              )}
+            </Section>
+
+            {/* Estimate */}
+            <Section icon="📐" title="Refined estimate">
+              {feature.estimate ? (
+                <div className="space-y-2 text-[12px] text-gray-600">
+                  <div className="flex gap-4 flex-wrap">
+                    <span><strong className="text-gray-700">Story points:</strong> {feature.estimate.totalStoryPoints}</span>
+                    <span><strong className="text-gray-700">Eng days:</strong> {feature.estimate.engDays}</span>
+                    <span><strong className="text-gray-700">Confidence:</strong> {feature.estimate.confidence}/10</span>
+                  </div>
+                  {feature.estimate.notes && <p>{feature.estimate.notes}</p>}
+                  {feature.estimate.risks?.length > 0 && <p><span className="font-medium text-gray-500">Risks to estimate:</span> {feature.estimate.risks.join('; ')}</p>}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => generateEstimate(feature.id).catch(() => {})}
+                    disabled={generatingEstimate}
+                    className="px-3 py-1.5 bg-brand-700 hover:bg-brand-800 disabled:opacity-50 text-white rounded-lg text-[12px] font-medium"
+                  >
+                    {generatingEstimate ? 'Estimating...' : 'Refine estimate'}
+                  </button>
+                  <AiBadge />
+                </div>
+              )}
+            </Section>
           </motion.div>
         )}
       </AnimatePresence>

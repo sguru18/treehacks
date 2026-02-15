@@ -81,6 +81,11 @@ function buildContext(board) {
           parts.push(`  ${j + 1}. [${t.type}] ${t.title} — ${t.estimatedEffort}`);
         });
       }
+      // Validation agents
+      if (f.research) parts.push('RESEARCH: ' + (f.research.summary || '') + (f.research.buildVsBuy ? ' | ' + f.research.buildVsBuy : ''));
+      if (f.critique) parts.push('CRITIC: ' + (f.critique.summary || '') + ' | Recommendation: ' + (f.critique.recommendation || ''));
+      if (f.risk) parts.push('RISK: ' + (f.risk.summary || '') + ' | Severity: ' + (f.risk.overallSeverity || ''));
+      if (f.estimate) parts.push('ESTIMATE: ' + (f.estimate.totalStoryPoints || '?') + ' SP, ' + (f.estimate.engDays || '?') + ' eng days');
       parts.push('');
     });
   }
