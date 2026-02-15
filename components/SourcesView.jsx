@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import useProductStore from "@/store/useProductStore";
 import IntegrationLogo from "@/components/IntegrationLogos";
@@ -457,25 +457,23 @@ function UploadForm({ onClose }) {
 export default function SourcesView() {
   const sources = useProductStore((s) => s.sources);
   const addSource = useProductStore((s) => s.addSource);
+  const removeSourcesByIntegration = useProductStore((s) => s.removeSourcesByIntegration);
   const loadSampleData = useProductStore((s) => s.loadSampleData);
   const analyzeSources = useProductStore((s) => s.analyzeSources);
   const analyzing = useProductStore((s) => s.analyzing);
   const analyzeError = useProductStore((s) => s.analyzeError);
 
-  const [connected, setConnected] = useState([]);
+  /* Derived from sources: an integration is "connected" if we have sources from it */
+  const connected = useMemo(
+    () => [...new Set(sources.map((s) => s.integration).filter(Boolean))],
+    [sources]
+  );
+
   const [modalIntegration, setModalIntegration] = useState(null);
   const [showUploadForm, setShowUploadForm] = useState(false);
 
-  /* Sync connected state when sources exist (e.g. from sample data) */
-  useEffect(() => {
-    if (sources.length > 0 && connected.length === 0) {
-      setConnected(["salesforce", "zendesk", "intercom"]);
-    }
-  }, [sources.length, connected.length]);
-
   const handleConnected = (integration) => {
     if (connected.includes(integration.id)) return;
-    setConnected((prev) => [...prev, integration.id]);
 
     // Load the fake data for this integration
     const data = getIntegrationData(integration.id);
@@ -490,12 +488,11 @@ export default function SourcesView() {
   };
 
   const handleDisconnect = (integrationId) => {
-    setConnected((prev) => prev.filter((id) => id !== integrationId));
+    removeSourcesByIntegration(integrationId);
   };
 
   const handleLoadSample = () => {
     loadSampleData();
-    setConnected(["salesforce", "zendesk", "intercom"]);
   };
 
   const connectedIntegrations = CATALOG.filter((i) => connected.includes(i.id));

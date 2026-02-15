@@ -53,6 +53,7 @@ const SAMPLE_SOURCES = [
     id: "sample-1",
     name: "Salesforce — Sarah Chen, PM (Gong call transcript)",
     type: "crm",
+    integration: "salesforce",
     content: `We've been using TaskFlow for about 6 months now. The collaboration features are great — my team loves being able to comment on tasks in real-time. But honestly, the biggest frustration is that we can't see task dependencies. When someone finishes a task, there's no way to automatically notify the next person in the chain. We end up using Slack for that, which defeats the purpose of having a project management tool.
 
 Also, the mobile app is really slow — it takes 5-10 seconds to load the dashboard. My team is hybrid and a lot of them check tasks on their phones during commutes. The slow performance means they just stop checking.
@@ -64,6 +65,7 @@ One more thing — we desperately need a workload view. I spend 30 minutes a day
     id: "sample-2",
     name: "Zendesk — Ticket #4521 (Calendar Integration)",
     type: "support",
+    integration: "zendesk",
     content: `Title: Can't connect TaskFlow to our calendar
 Priority: High
 
@@ -78,6 +80,7 @@ Also, the export feature only supports CSV — we need PDF reports for our stake
     id: "sample-3",
     name: "Intercom — NPS Survey Response (Score: 7)",
     type: "support",
+    integration: "intercom",
     content: `I like TaskFlow overall, especially the board view and the drag-and-drop interface. It's really intuitive for daily task management.
 
 But I'd give a higher score if you added better reporting. We need to track team velocity, burndown charts, and cycle time. Right now I export data to Excel and make charts manually — it takes hours and the data is always a day behind.
@@ -91,6 +94,7 @@ The templates are nice though. I found a good project template for sprint planni
     id: "sample-4",
     name: "Intercom — Chat transcript (Beta feature review)",
     type: "support",
+    integration: "intercom",
     content: `The new automation feature is interesting but really confusing. I tried to set up a rule to move tasks automatically when they're marked complete, but the UI for creating rules is really unintuitive. I had to watch a YouTube tutorial to figure it out, and I'm pretty tech-savvy.
 
 The conditions and actions are laid out in a way that doesn't match how I think about workflows. It would be much better as a visual flowchart — like "when THIS happens, do THAT."
@@ -104,6 +108,7 @@ Also, there's no undo button for automations. I accidentally set up a rule that 
     id: "sample-5",
     name: "Salesforce — James Lee, Eng Lead (Gong call transcript)",
     type: "crm",
+    integration: "salesforce",
     content: `What I really need is API access. We want to integrate TaskFlow into our CI/CD pipeline so that when a deployment succeeds, the related tasks automatically get marked as done. Right now my developers have to remember to update TaskFlow manually, and half the time they forget.
 
 Also, we have custom fields on our tasks — like "Sprint Number" and "Story Points" — but there's no way to use them in filters or reports. They're basically just labels that you can see on individual tasks but can't do anything useful with.
@@ -117,6 +122,7 @@ On the positive side, the Git integration for linking commits to tasks is excell
     id: "sample-6",
     name: "Zendesk — Ticket #5102 (Workload Dashboard request)",
     type: "support",
+    integration: "zendesk",
     content: `Title: Workload View / Resource Management Dashboard
 Submitted by: Maria Chen, Operations Manager
 Priority: Critical
@@ -170,6 +176,10 @@ const useProductStore = create(
       removeSource: (id) =>
         set((state) => ({
           sources: state.sources.filter((s) => s.id !== id),
+        })),
+      removeSourcesByIntegration: (integrationId) =>
+        set((state) => ({
+          sources: state.sources.filter((s) => s.integration !== integrationId),
         })),
       loadSampleData: () =>
         set({
